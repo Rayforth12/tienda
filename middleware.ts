@@ -27,12 +27,14 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Si no hay sesión y no está en login, redirigir al login
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  const isPublicRoute = 
+    request.nextUrl.pathname.startsWith('/tienda') ||
+    request.nextUrl.pathname.startsWith('/login')
+
+  if (!user && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Si hay sesión y está en login, redirigir al dashboard
   if (user && request.nextUrl.pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/', request.url))
   }
@@ -41,5 +43,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
