@@ -147,7 +147,7 @@ export default function ClientesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {c.telefono && (
-                      
+                      <a
                         href={`https://wa.me/${c.telefono.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
