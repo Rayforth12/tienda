@@ -15,6 +15,7 @@ const COLORES = ['#7C3AED', '#DB2777', '#059669', '#D97706', '#2563EB', '#DC2626
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [gananciaPorPedido, setGananciaPorPedido] = useState<any[]>([])
+  const [gananciasPorCategoria, setGananciasPorCategoria] = useState<any[]>([])
   const [gananciaMensual, setGananciaMensual] = useState<any[]>([])
   const [articulosMasPedidos, setArticulosMasPedidos] = useState<any[]>([])
   const [resumen, setResumen] = useState({
@@ -72,6 +73,24 @@ export default function DashboardPage() {
         .slice(0, 5)
         .map(([name, value]) => ({ name, value }))
       setArticulosMasPedidos(top)
+
+      // Ganancias por categoría
+      const porCategoria: Record<string, number> = {}
+      pedidos.forEach(p => {
+        (p.solicitudes || []).forEach((s: any) => {
+          const cat = s.categoria || 'sin_categoria'
+          const label = cat === 'sin_categoria' ? 'Sin categoría' :
+            cat === 'cuidado_personal' ? 'Cuidado personal' :
+            cat === 'dulces_snacks' ? 'Dulces y snacks' :
+            cat.charAt(0).toUpperCase() + cat.slice(1)
+          porCategoria[label] = (porCategoria[label] || 0) + (s.ganancia || 0)
+        })
+      })
+      const categoriaData = Object.entries(porCategoria)
+        .filter(([, v]) => v > 0)
+        .sort(([, a], [, b]) => b - a)
+        .map(([name, ganancia]) => ({ name, ganancia }))
+      setGananciasPorCategoria(categoriaData)
 
       // Resumen
       const todasSolicitudes = pedidos.flatMap(p => p.solicitudes || [])
@@ -159,6 +178,31 @@ export default function DashboardPage() {
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₡${(v/1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: any) => formatearPrecio(v)} />
                 <Bar dataKey="ganancia" name="Ganancia" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {gananciasPorCategoria.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-sm text-gray-700">Ganancia por categoría</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={gananciasPorCategoria} margin={{ top: 5, right: 10, left: 10, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10 }}
+                  angle={-35}
+                  textAnchor="end"
+                  interval={0}
+                />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₡${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v: any) => formatearPrecio(v)} />
+                <Bar dataKey="ganancia" name="Ganancia" fill="#DB2777" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

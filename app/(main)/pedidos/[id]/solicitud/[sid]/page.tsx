@@ -42,6 +42,7 @@ export default function EditarSolicitudPage() {
     precio_venta: '',
     estado: 'pendiente',
     cobrado: false,
+    categoria: '',
     notas: '',
   })
 
@@ -63,6 +64,7 @@ export default function EditarSolicitudPage() {
           precio_venta: data.precio_venta?.toString() || '',
           estado: data.estado || 'pendiente',
           cobrado: data.cobrado || false,
+          categoria: data.categoria || '',
           notas: data.notas || '',
         })
         if (data.imagen_url) setImagenPrincipalPreview(data.imagen_url)
@@ -97,6 +99,7 @@ export default function EditarSolicitudPage() {
       await updateSolicitud(sid as string, {
         articulo: form.articulo,
         alternativa: form.alternativa || undefined,
+        categoria: form.categoria || undefined,
         lugar_entrega: form.lugar_entrega || undefined,
         precio_compra: form.precio_compra ? parseFloat(form.precio_compra) : undefined,
         precio_venta: form.precio_venta ? parseFloat(form.precio_venta) : undefined,
@@ -195,8 +198,15 @@ export default function EditarSolicitudPage() {
                   <span className="text-sm text-gray-500">Subir foto</span>
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) { setImagenPrincipalFile(file); setImagenPrincipalPreview(URL.createObjectURL(file)) }
-                  }} />
+                    if (!file) return
+                    if (!file.type.startsWith('image/')) {
+                      alert('Solo se pueden subir imágenes (jpg, png, webp, etc.)')
+                      e.target.value = ''
+                      return
+                    }
+                    setImagenPrincipalFile(file)
+                    setImagenPrincipalPreview(URL.createObjectURL(file))
+                  }} /> 
                 </label>
               )}
             </div>
@@ -226,10 +236,42 @@ export default function EditarSolicitudPage() {
                   <span className="text-sm text-gray-500">Subir foto</span>
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) { setImagenAlternativaFile(file); setImagenAlternativaPreview(URL.createObjectURL(file)) }
+                    if (!file) return
+                    if (!file.type.startsWith('image/')) {
+                      alert('Solo se pueden subir imágenes (jpg, png, webp, etc.)')
+                      e.target.value = ''
+                      return
+                    }
+                    setImagenAlternativaFile(file)
+                    setImagenAlternativaPreview(URL.createObjectURL(file))
                   }} />
                 </label>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Categoría del artículo</Label>
+              <select
+                name="categoria"
+                value={form.categoria}
+                onChange={handleChange}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Sin categoría --</option>
+                <option value="maquillaje">Maquillaje</option>
+                <option value="cuidado_personal">Cuidado personal</option>
+                <option value="perfumes">Perfumes</option>
+                <option value="licores">Licores</option>
+                <option value="tenis">Tenis</option>
+                <option value="ropa">Ropa</option>
+                <option value="accesorios">Accesorios</option>
+                <option value="electronica">Electrónica</option>
+                <option value="juguetes">Juguetes</option>
+                <option value="hogar">Hogar</option>
+                <option value="medicamentos">Medicamentos</option>
+                <option value="suplementos">Suplementos</option>
+                <option value="dulces_snacks">Dulces y snacks</option>
+                <option value="otro">Otro</option>
+              </select>
             </div>
           </CardContent>
         </Card>
@@ -240,8 +282,17 @@ export default function EditarSolicitudPage() {
           <CardContent className="space-y-3">
             <div className="space-y-2">
               <Label>Lugar de entrega</Label>
-              <Input name="lugar_entrega" value={form.lugar_entrega} onChange={handleChange}
-                placeholder="Dirección o referencia" />
+              <select
+                name="lugar_entrega"
+                value={form.lugar_entrega}
+                onChange={handleChange}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Seleccioná el lugar --</option>
+                <option value="Cartago">Cartago</option>
+                <option value="San José">San José</option>
+                <option value="Guápiles">Guápiles</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">

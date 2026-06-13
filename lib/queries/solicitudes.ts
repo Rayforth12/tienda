@@ -22,6 +22,7 @@ export async function createSolicitud(solicitud: {
   lugar_entrega?: string
   precio_compra?: number
   precio_venta?: number
+  categoria?: string
   notas?: string
 }) {
   const supabase = createClient()

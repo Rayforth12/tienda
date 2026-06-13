@@ -36,7 +36,7 @@ export interface Solicitud {
   notas?: string
   created_at: string
   cliente?: Cliente
-  
+   categoria?: string
 }
 
 export interface ArticuloInventario {

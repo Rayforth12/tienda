@@ -12,6 +12,7 @@ export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [guardado, setGuardado] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     nombre_negocio: '',
     moneda: 'CRC',
@@ -21,7 +22,7 @@ export default function ConfiguracionPage() {
   useEffect(() => {
     async function cargar() {
       const supabase = createClient()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('configuracion')
         .select('*')
         .eq('id', 1)
@@ -44,16 +45,24 @@ export default function ConfiguracionPage() {
 
   async function handleGuardar() {
     setSaving(true)
+    setError('')
     const supabase = createClient()
-    await supabase.from('configuracion').update({
-      nombre_negocio: form.nombre_negocio,
-      moneda: form.moneda,
-      margen_minimo: parseFloat(form.margen_minimo),
-      updated_at: new Date().toISOString(),
-    }).eq('id', 1)
+    const { error } = await supabase
+      .from('configuracion')
+      .upsert({
+        id: 1,
+        nombre_negocio: form.nombre_negocio,
+        moneda: form.moneda,
+        margen_minimo: parseFloat(form.margen_minimo),
+        updated_at: new Date().toISOString(),
+      })
+    if (error) {
+      setError('Error al guardar: ' + error.message)
+    } else {
+      setGuardado(true)
+      setTimeout(() => setGuardado(false), 3000)
+    }
     setSaving(false)
-    setGuardado(true)
-    setTimeout(() => setGuardado(false), 3000)
   }
 
   if (loading) return <p className="text-gray-400">Cargando configuración...</p>
@@ -76,13 +85,8 @@ export default function ConfiguracionPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Nombre del negocio</Label>
-              <Input
-                name="nombre_negocio"
-                placeholder="Ej: Tienda Frontera"
-                value={form.nombre_negocio}
-                onChange={handleChange}
-              />
-              <p className="text-xs text-gray-400">Este nombre aparece en el encabezado del sistema.</p>
+              <Input name="nombre_negocio" placeholder="Ej: Tienda Frontera"
+                value={form.nombre_negocio} onChange={handleChange} />
             </div>
           </CardContent>
         </Card>
@@ -94,27 +98,16 @@ export default function ConfiguracionPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Moneda principal</Label>
-              <select
-                name="moneda"
-                value={form.moneda}
-                onChange={handleChange}
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              >
+              <select name="moneda" value={form.moneda} onChange={handleChange}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                 <option value="CRC">Colones costarricenses (₡)</option>
                 <option value="USD">Dólares ($)</option>
               </select>
             </div>
-
             <div className="space-y-2">
               <Label>Margen mínimo de ganancia (%)</Label>
-              <Input
-                name="margen_minimo"
-                type="number"
-                min="0"
-                max="100"
-                value={form.margen_minimo}
-                onChange={handleChange}
-              />
+              <Input name="margen_minimo" type="number" min="0" max="100"
+                value={form.margen_minimo} onChange={handleChange} />
               <p className="text-xs text-gray-400">
                 Referencia para saber si una venta está por debajo de lo esperado.
               </p>
@@ -122,25 +115,11 @@ export default function ConfiguracionPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-gray-700">Cuenta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-500 mb-3">
-              Para cambiar el correo o la contraseña de acceso, contactá al administrador del sistema.
-            </p>
-          </CardContent>
-        </Card>
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
-        <Button
-          className="w-full bg-violet-600 hover:bg-violet-700 gap-2"
-          onClick={handleGuardar}
-          disabled={saving}
-        >
-          {guardado ? (
-            <><Check size={16} /> Guardado</>
-          ) : saving ? 'Guardando...' : 'Guardar cambios'}
+        <Button className="w-full bg-violet-600 hover:bg-violet-700 gap-2"
+          onClick={handleGuardar} disabled={saving}>
+          {guardado ? <><Check size={16} /> Guardado</> : saving ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </div>
     </div>

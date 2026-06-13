@@ -13,7 +13,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Package, Plus, Upload, X } from 'lucide-react'
 import { uploadImagen } from '@/lib/queries/solicitudes'
 
-const categorias = ['maquillaje', 'cuidado_personal', 'ropa', 'electronica', 'hogar', 'otro']
+const categorias = [
+  'maquillaje',
+  'cuidado_personal',
+  'perfumes',
+  'licores',
+  'tenis',
+  'ropa',
+  'accesorios',
+  'electronica',
+  'juguetes',
+  'hogar',
+  'medicamentos',
+  'suplementos',
+  'dulces_snacks',
+  'otro',
+]
+
 const estadoConfig: Record<string, { label: string; class: string }> = {
   disponible: { label: 'Disponible', class: 'bg-green-100 text-green-700' },
   reservado:  { label: 'Reservado',  class: 'bg-yellow-100 text-yellow-700' },
