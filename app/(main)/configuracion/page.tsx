@@ -15,14 +15,14 @@ export default function ConfiguracionPage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     nombre_negocio: '',
-    moneda: 'CRC',
     margen_minimo: '20',
+    tipo_cambio: '520',
   })
 
   useEffect(() => {
     async function cargar() {
       const supabase = createClient()
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('configuracion')
         .select('*')
         .eq('id', 1)
@@ -30,8 +30,8 @@ export default function ConfiguracionPage() {
       if (data) {
         setForm({
           nombre_negocio: data.nombre_negocio || '',
-          moneda: data.moneda || 'CRC',
           margen_minimo: data.margen_minimo?.toString() || '20',
+          tipo_cambio: data.tipo_cambio?.toString() || '520',
         })
       }
       setLoading(false)
@@ -39,7 +39,7 @@ export default function ConfiguracionPage() {
     cargar()
   }, [])
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
@@ -52,8 +52,8 @@ export default function ConfiguracionPage() {
       .upsert({
         id: 1,
         nombre_negocio: form.nombre_negocio,
-        moneda: form.moneda,
         margen_minimo: parseFloat(form.margen_minimo),
+        tipo_cambio: parseFloat(form.tipo_cambio),
         updated_at: new Date().toISOString(),
       })
     if (error) {
@@ -93,23 +93,23 @@ export default function ConfiguracionPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-gray-700">Preferencias de precios</CardTitle>
+            <CardTitle className="text-sm text-gray-700">Precios y ganancias</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Moneda principal</Label>
-              <select name="moneda" value={form.moneda} onChange={handleChange}
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-                <option value="CRC">Colones costarricenses (₡)</option>
-                <option value="USD">Dólares ($)</option>
-              </select>
+              <Label>Tipo de cambio (₡ por $1)</Label>
+              <Input name="tipo_cambio" type="number" min="1"
+                value={form.tipo_cambio} onChange={handleChange} />
+              <p className="text-xs text-gray-400">
+                Actualizalo cada vez que vayas a la frontera según el tipo de cambio del día.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Margen mínimo de ganancia (%)</Label>
               <Input name="margen_minimo" type="number" min="0" max="100"
                 value={form.margen_minimo} onChange={handleChange} />
               <p className="text-xs text-gray-400">
-                Referencia para saber si una venta está por debajo de lo esperado.
+                Con este porcentaje se calcula el precio de venta sugerido automáticamente.
               </p>
             </div>
           </CardContent>

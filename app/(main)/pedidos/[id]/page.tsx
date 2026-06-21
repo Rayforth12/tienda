@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Plus, User, MapPin, Package, CheckCircle, XCircle, Clock, Truck, Search } from 'lucide-react'
+import GastosPedido from '@/components/pedidos/GastosPedido'
+
 
 const estadoSolicitud: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
   pendiente:     { label: 'Pendiente',     icon: <Clock size={13} />,       class: 'bg-yellow-100 text-yellow-700' },
@@ -31,7 +33,10 @@ export default function PedidoDetallePage() {
     setLoading(false)
   }
 
-  useEffect(() => { cargar() }, [id])
+ useEffect(() => {
+    void cargar()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [id])
 
   async function handleCerrar() {
     if (!confirm('¿Cerrar este pedido? Ya no se podrán agregar solicitudes.')) return
@@ -130,6 +135,9 @@ export default function PedidoDetallePage() {
         )}
       </div>
 
+      {/* Gastos del viaje */}
+      <GastosPedido pedidoId={id as string} />
+      
       {/* Búsqueda y filtros */}
       {solicitudes.length > 0 && (
         <div className="space-y-3 mb-4">

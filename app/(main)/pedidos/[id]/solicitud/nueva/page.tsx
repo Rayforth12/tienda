@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Upload, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
+import { formatearPrecio } from '@/lib/utils'
 
 interface ImagenInput {
   file: File | null
@@ -60,7 +62,7 @@ export default function NuevaSolicitudPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [nuevoCliente, setNuevoCliente] = useState(false)
-
+  const [config, setConfig] = useState({ margen_minimo: 20, tipo_cambio: 520 })
   const [imagenPrincipal, setImagenPrincipal] = useState<ImagenInput>({ file: null, preview: null })
   const [imagenAlternativa, setImagenAlternativa] = useState<ImagenInput>({ file: null, preview: null })
 
@@ -77,7 +79,18 @@ export default function NuevaSolicitudPage() {
     notas: '',
   })
 
-  useEffect(() => { getClientes().then(setClientes) }, [])
+  useEffect(() => {
+    getClientes().then(setClientes)
+    async function cargarConfig() {
+      const supabase = createClient()
+      const { data } = await supabase.from('configuracion').select('*').eq('id', 1).single()
+      if (data) setConfig({
+        margen_minimo: data.margen_minimo || 20,
+        tipo_cambio: data.tipo_cambio || 520,
+      })
+    }
+    cargarConfig()
+  }, [])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -206,6 +219,15 @@ export default function NuevaSolicitudPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm text-gray-700">Artículo solicitado</CardTitle></CardHeader>
           <CardContent className="space-y-3">
+
+            {/* PRIMERO la descripción */}
+            <div className="space-y-2">
+              <Label>Descripción del artículo *</Label>
+              <Input name="articulo" placeholder="Ej: Crema L'Oreal Elvive 400ml"
+                value={form.articulo} onChange={handleChange} />
+            </div>
+
+            {/* LUEGO la categoría */}
             <div className="space-y-2">
               <Label>Categoría del artículo</Label>
               <select
@@ -284,10 +306,19 @@ export default function NuevaSolicitudPage() {
                   value={form.precio_venta} onChange={handleChange} />
               </div>
             </div>
-            {form.precio_compra && form.precio_venta && (
-              <p className="text-sm text-green-600 font-medium">
-                Ganancia: ₡{(parseFloat(form.precio_venta) - parseFloat(form.precio_compra)).toLocaleString('es-CR')}
-              </p>
+            {form.precio_compra && (
+              <div className="col-span-2 bg-violet-50 rounded-lg p-3 text-xs space-y-1">
+                <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
+                <p className="text-gray-600">
+                  Con {config.margen_minimo}% de ganancia:{' '}
+                  <span className="font-bold text-violet-700">
+                    {formatearPrecio(parseFloat(form.precio_compra) * (1 + config.margen_minimo / 100))}
+                  </span>
+                </p>
+                <p className="text-gray-400">
+                  (Si el costo fue en dólares: ${(parseFloat(form.precio_compra) / config.tipo_cambio).toFixed(2)})
+                </p>
+              </div>
             )}
             <div className="space-y-2">
               <Label>Notas especiales</Label>

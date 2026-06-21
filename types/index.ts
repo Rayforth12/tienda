@@ -3,6 +3,8 @@ export interface Cliente {
   nombre: string
   telefono?: string
   lugar_entrega_habitual?: string
+  tipo?: string
+  porcentaje_ganancia?: number
   notas?: string
   created_at: string
 }
