@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase'
 const tipoConfig: Record<string, { label: string; class: string }> = {
   familiar: { label: 'Familiar', class: 'bg-pink-100 text-pink-700' },
   amigo:    { label: 'Amigo/a', class: 'bg-blue-100 text-blue-700' },
+  novio:    { label: 'Novio/a',   class: 'bg-rose-100 text-rose-600' },
   cliente:  { label: 'Cliente', class: 'bg-gray-100 text-gray-600' },
 }
 
@@ -228,17 +229,20 @@ useEffect(() => {
                 <option value="cliente">Cliente</option>
                 <option value="amigo">Amigo/a</option>
                 <option value="familiar">Familiar</option>
+                <option value="novio">Novio/a</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <Label>Porcentaje de ganancia personalizado (%)</Label>
-              <Input name="porcentaje_ganancia" type="number" min="0" max="100"
-                placeholder="Ej: 10 para familiares, 30 para clientes"
-                value={form.porcentaje_ganancia} onChange={handleChange} />
-              <p className="text-xs text-gray-400">
-                Si se deja vacío se usa el porcentaje general de configuración.
-              </p>
-            </div>
+            {form.tipo !== 'cliente' && (
+              <div className="space-y-2">
+                <Label>Porcentaje de ganancia personalizado (%)</Label>
+                <Input name="porcentaje_ganancia" type="number" min="0" max="100"
+                  placeholder="Ej: 10 para familiares, 30 para amigos"
+                  value={form.porcentaje_ganancia} onChange={handleChange} />
+                <p className="text-xs text-gray-400">
+                  Si se deja vacío se usa el porcentaje general de configuración.
+                </p>
+              </div>
+            )}
             {error && <p className="text-sm text-red-500">{error}</p>}
             <Button className="w-full bg-violet-600 hover:bg-violet-700"
               onClick={handleGuardar} disabled={saving}>

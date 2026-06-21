@@ -16,7 +16,13 @@ const tiposGasto = [
   { value: 'otro', label: '📦 Otro' },
 ]
 
-export default function GastosPedido({ pedidoId }: { pedidoId: string }) {
+export default function GastosPedido({
+  pedidoId,
+  onCambio,
+}: {
+  pedidoId: string
+  onCambio?: () => void
+}) {
   const [gastos, setGastos] = useState<GastoPedido[]>([])
   const [loading, setLoading] = useState(true)
   const [agregando, setAgregando] = useState(false)
@@ -42,14 +48,16 @@ export default function GastosPedido({ pedidoId }: { pedidoId: string }) {
     })
     setForm({ descripcion: '', monto: '', tipo: 'combustible' })
     setAgregando(false)
-    cargar()
+    await cargar()
+    onCambio?.()
     setSaving(false)
   }
 
   async function handleEliminar(id: string) {
     if (!confirm('¿Eliminar este gasto?')) return
     await deleteGasto(id)
-    cargar()
+    await cargar()
+    onCambio?.()
   }
 
   const totalGastos = gastos.reduce((acc, g) => acc + g.monto, 0)

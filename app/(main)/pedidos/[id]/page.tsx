@@ -149,7 +149,10 @@ export default function PedidoDetallePage() {
       </div>
 
       {/* Gastos del viaje */}
-      <GastosPedido pedidoId={id as string} />
+      <GastosPedido 
+        pedidoId={id as string} 
+        onCambio={cargar}
+      />
       
       {/* Búsqueda y filtros */}
       {solicitudes.length > 0 && (
