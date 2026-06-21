@@ -65,6 +65,8 @@ export default function NuevaSolicitudPage() {
   const [config, setConfig] = useState({ margen_minimo: 20, tipo_cambio: 520 })
   const [imagenPrincipal, setImagenPrincipal] = useState<ImagenInput>({ file: null, preview: null })
   const [imagenAlternativa, setImagenAlternativa] = useState<ImagenInput>({ file: null, preview: null })
+  const [margenEfectivo, setMargenEfectivo] = useState(0)
+  const [tipoCliente, setTipoCliente] = useState('')
 
   const [form, setForm] = useState({
     cliente_id: '',
@@ -80,15 +82,24 @@ export default function NuevaSolicitudPage() {
     notas: '',
   })
 
+  const precioCompraEnColones = form.precio_compra
+  ? form.moneda_compra === 'USD'
+    ? parseFloat(form.precio_compra) * config.tipo_cambio
+    : parseFloat(form.precio_compra)
+  : undefined
+
   useEffect(() => {
     getClientes().then(setClientes)
     async function cargarConfig() {
       const supabase = createClient()
       const { data } = await supabase.from('configuracion').select('*').eq('id', 1).single()
-      if (data) setConfig({
-        margen_minimo: data.margen_minimo || 20,
-        tipo_cambio: data.tipo_cambio || 520,
-      })
+      if (data) {
+        setConfig({
+          margen_minimo: data.margen_minimo || 20,
+          tipo_cambio: data.tipo_cambio || 520,
+        })
+        setMargenEfectivo(data.margen_minimo || 20)
+      }
     }
     cargarConfig()
   }, [])
@@ -98,19 +109,33 @@ export default function NuevaSolicitudPage() {
   }
 
   function handleImagen(tipo: 'principal' | 'alternativa') {
-  return (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      alert('Solo se pueden subir imágenes (jpg, png, webp, etc.)')
-      e.target.value = ''
-      return
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      if (!file.type.startsWith('image/')) {
+        alert('Solo se pueden subir imágenes (jpg, png, webp, etc.)')
+        e.target.value = ''
+        return
+      }
+      const preview = URL.createObjectURL(file)
+      if (tipo === 'principal') setImagenPrincipal({ file, preview })
+      else setImagenAlternativa({ file, preview })
     }
-    const preview = URL.createObjectURL(file)
-    if (tipo === 'principal') setImagenPrincipal({ file, preview })
-    else setImagenAlternativa({ file, preview })
   }
-}
+
+  function handleClienteChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const clienteId = e.target.value
+    setForm({ ...form, cliente_id: clienteId })
+    
+    const clienteSeleccionado = clientes.find(c => c.id === clienteId) as any
+    if (clienteSeleccionado?.porcentaje_ganancia) {
+      setMargenEfectivo(clienteSeleccionado.porcentaje_ganancia)
+      setTipoCliente(clienteSeleccionado.tipo || 'cliente')
+    } else {
+      setMargenEfectivo(config.margen_minimo)
+      setTipoCliente(clienteSeleccionado?.tipo || 'cliente')
+    }
+  }
 
   function clearImagen(tipo: 'principal' | 'alternativa') {
     if (tipo === 'principal') setImagenPrincipal({ file: null, preview: null })
@@ -149,7 +174,7 @@ export default function NuevaSolicitudPage() {
         imagen_url,
         imagen_alternativa_url,
         lugar_entrega: form.lugar_entrega || undefined,
-        precio_compra: form.precio_compra ? parseFloat(form.precio_compra) : undefined,
+        precio_compra: precioCompraEnColones,
         precio_venta: form.precio_venta ? parseFloat(form.precio_venta) : undefined,
         categoria: form.categoria || undefined,
         notas: form.notas || undefined,
@@ -183,7 +208,7 @@ export default function NuevaSolicitudPage() {
                   <select
                     name="cliente_id"
                     value={form.cliente_id}
-                    onChange={handleChange}
+                    onChange={handleClienteChange}
                     className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   >
                     <option value="">-- Elegí un cliente --</option>
@@ -339,33 +364,45 @@ export default function NuevaSolicitudPage() {
 
               {form.precio_compra && (
                 <div className="bg-violet-50 rounded-lg p-3 text-xs space-y-1.5">
-                  <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
+                    {tipoCliente && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        tipoCliente === 'familiar' ? 'bg-pink-100 text-pink-700' :
+                        tipoCliente === 'amigo' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {tipoCliente === 'familiar' ? 'Familiar' :
+                        tipoCliente === 'amigo' ? 'Amigo/a' : 'Cliente'} · {margenEfectivo}%
+                      </span>
+                    )}
+                  </div>
                   {form.moneda_compra === 'USD' ? (
                     <>
                       <p className="text-gray-500">
-                        Costo en colones: <span className="font-semibold text-gray-700">
+                        Costo en colones:{' '}
+                        <span className="font-semibold text-gray-700">
                           {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio)}
                         </span>
                         <span className="text-gray-400"> (${form.precio_compra} × ₡{config.tipo_cambio})</span>
                       </p>
                       <p className="text-gray-600">
-                        Con {config.margen_minimo}% de ganancia:{' '}
+                        Con {margenEfectivo}% de ganancia:{' '}
                         <span className="font-bold text-violet-700">
-                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio * (1 + config.margen_minimo / 100))}
+                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio * (1 + margenEfectivo / 100))}
                         </span>
                       </p>
                     </>
                   ) : (
                     <p className="text-gray-600">
-                      Con {config.margen_minimo}% de ganancia:{' '}
+                      Con {margenEfectivo}% de ganancia:{' '}
                       <span className="font-bold text-violet-700">
-                        {formatearPrecio(parseFloat(form.precio_compra) * (1 + config.margen_minimo / 100))}
+                        {formatearPrecio(parseFloat(form.precio_compra) * (1 + margenEfectivo / 100))}
                       </span>
                     </p>
                   )}
                 </div>
               )}
-
               <div className="space-y-2">
                 <Label>Precio de venta (₡)</Label>
                 <Input
