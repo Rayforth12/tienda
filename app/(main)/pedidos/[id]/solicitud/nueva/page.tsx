@@ -76,6 +76,7 @@ export default function NuevaSolicitudPage() {
     lugar_entrega: '',
     precio_compra: '',
     precio_venta: '',
+    moneda_compra: 'CRC',
     notas: '',
   })
 
@@ -294,32 +295,88 @@ export default function NuevaSolicitudPage() {
                 <option value="Guápiles">Guápiles</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Precio de compra (₡)</Label>
-                <Input name="precio_compra" type="number" placeholder="0"
-                  value={form.precio_compra} onChange={handleChange} />
+                <Label>¿En qué moneda compraste el artículo?</Label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, moneda_compra: 'CRC' })}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      form.moneda_compra === 'CRC'
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    ₡ Colones
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, moneda_compra: 'USD' })}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      form.moneda_compra === 'USD'
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    $ Dólares
+                  </button>
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>
+                  Precio de compra ({form.moneda_compra === 'USD' ? '$' : '₡'})
+                </Label>
+                <Input
+                  name="precio_compra"
+                  type="number"
+                  placeholder="0"
+                  value={form.precio_compra}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {form.precio_compra && (
+                <div className="bg-violet-50 rounded-lg p-3 text-xs space-y-1.5">
+                  <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
+                  {form.moneda_compra === 'USD' ? (
+                    <>
+                      <p className="text-gray-500">
+                        Costo en colones: <span className="font-semibold text-gray-700">
+                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio)}
+                        </span>
+                        <span className="text-gray-400"> (${form.precio_compra} × ₡{config.tipo_cambio})</span>
+                      </p>
+                      <p className="text-gray-600">
+                        Con {config.margen_minimo}% de ganancia:{' '}
+                        <span className="font-bold text-violet-700">
+                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio * (1 + config.margen_minimo / 100))}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-gray-600">
+                      Con {config.margen_minimo}% de ganancia:{' '}
+                      <span className="font-bold text-violet-700">
+                        {formatearPrecio(parseFloat(form.precio_compra) * (1 + config.margen_minimo / 100))}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Precio de venta (₡)</Label>
-                <Input name="precio_venta" type="number" placeholder="0"
-                  value={form.precio_venta} onChange={handleChange} />
+                <Input
+                  name="precio_venta"
+                  type="number"
+                  placeholder="0"
+                  value={form.precio_venta}
+                  onChange={handleChange}
+                />
               </div>
             </div>
-            {form.precio_compra && (
-              <div className="col-span-2 bg-violet-50 rounded-lg p-3 text-xs space-y-1">
-                <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
-                <p className="text-gray-600">
-                  Con {config.margen_minimo}% de ganancia:{' '}
-                  <span className="font-bold text-violet-700">
-                    {formatearPrecio(parseFloat(form.precio_compra) * (1 + config.margen_minimo / 100))}
-                  </span>
-                </p>
-                <p className="text-gray-400">
-                  (Si el costo fue en dólares: ${(parseFloat(form.precio_compra) / config.tipo_cambio).toFixed(2)})
-                </p>
-              </div>
-            )}
             <div className="space-y-2">
               <Label>Notas especiales</Label>
               <Textarea name="notas" placeholder="Indicaciones del cliente..."

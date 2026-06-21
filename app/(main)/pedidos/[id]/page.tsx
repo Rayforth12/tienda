@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Plus, User, MapPin, Package, CheckCircle, XCircle, Clock, Truck, Search } from 'lucide-react'
 import GastosPedido from '@/components/pedidos/GastosPedido'
+import { getGastosByPedido } from '@/lib/queries/gastos'
 
 
 const estadoSolicitud: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
@@ -26,11 +27,14 @@ export default function PedidoDetallePage() {
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [totalGastos, setTotalGastos] = useState(0)
 
   async function cargar() {
     const data = await getPedidoById(id as string)
+    const gastos = await getGastosByPedido(id as string)
     setPedido(data)
     setLoading(false)
+    setTotalGastos(gastos.reduce((acc, g) => acc + g.monto, 0))
   }
 
  useEffect(() => {
@@ -97,7 +101,7 @@ export default function PedidoDetallePage() {
 
       {/* Resumen */}
       {solicitudes.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <Card><CardContent className="pt-4 pb-3 text-center">
             <p className="text-xs text-gray-500 mb-1">Solicitudes</p>
             <p className="text-2xl font-bold text-violet-700">{solicitudes.length}</p>
@@ -107,8 +111,17 @@ export default function PedidoDetallePage() {
             <p className="text-lg font-bold text-gray-700">{formatearPrecio(totalVenta)}</p>
           </CardContent></Card>
           <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Ganancia</p>
+            <p className="text-xs text-gray-500 mb-1">Ganancia bruta</p>
             <p className="text-lg font-bold text-green-600">{formatearPrecio(totalGanancia)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-3 text-center">
+            <p className="text-xs text-gray-500 mb-1">Ganancia neta</p>
+            <p className={`text-lg font-bold ${totalGanancia - totalGastos >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {formatearPrecio(totalGanancia - totalGastos)}
+            </p>
+            {totalGastos > 0 && (
+              <p className="text-xs text-red-400">-{formatearPrecio(totalGastos)} gastos</p>
+            )}
           </CardContent></Card>
         </div>
       )}
