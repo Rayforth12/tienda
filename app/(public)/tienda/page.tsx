@@ -173,12 +173,14 @@ ${lineas}
             return (
               <Card key={a.id} className="overflow-hidden">
                 {a.imagen_url ? (
-                  <img
-                    src={a.imagen_url}
-                    alt={a.nombre}
-                    className="w-full h-36 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => setImagenViewer(a.imagen_url!)}
-                  />
+                  <div className="relative overflow-hidden group">
+                    <img
+                      src={a.imagen_url}
+                      alt={a.nombre}
+                      className="w-full h-36 object-cover transition-transform duration-300 group-hover:scale-110 cursor-zoom-in"
+                      onClick={() => setImagenViewer(a.imagen_url!)}
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-36 bg-gray-100 flex items-center justify-center">
                     <Package size={32} className="text-gray-300" />
