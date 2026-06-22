@@ -10,11 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Upload, X, Send, Eye, Trash2, Pencil } from 'lucide-react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { ArrowLeft, Upload, X, Send, Trash2, Pencil } from 'lucide-react'
 import { uploadImagen } from '@/lib/queries/solicitudes'
 import Link from 'next/link'
-
-const ID_LOCAL = 'tienda_cliente_id'
 
 interface SolicitudPublica {
   id: string
@@ -28,6 +27,13 @@ interface SolicitudPublica {
   created_at: string
 }
 
+const estadoLabel: Record<string, { text: string; class: string }> = {
+  pendiente:     { text: '⏳ Pendiente',     class: 'bg-yellow-100 text-yellow-700' },
+  conseguido:    { text: '✅ Conseguido',    class: 'bg-green-100 text-green-700' },
+  no_disponible: { text: '❌ No disponible', class: 'bg-red-100 text-red-600' },
+  entregado:     { text: '📦 Entregado',     class: 'bg-gray-100 text-gray-600' },
+}
+
 export default function PedidoPublicoPage() {
   const { id } = useParams()
   const [pedido, setPedido] = useState<Pedido | null>(null)
@@ -38,6 +44,7 @@ export default function PedidoPublicoPage() {
   const [exito, setExito] = useState(false)
   const [misSolicitudes, setMisSolicitudes] = useState<SolicitudPublica[]>([])
   const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [imagenViewer, setImagenViewer] = useState<string | null>(null)
 
   const [imagenPrincipal, setImagenPrincipal] = useState<{ file: File | null; preview: string | null }>({ file: null, preview: null })
   const [imagenAlternativa, setImagenAlternativa] = useState<{ file: File | null; preview: string | null }>({ file: null, preview: null })
@@ -53,7 +60,6 @@ export default function PedidoPublicoPage() {
     notas: '',
   })
 
-  // Recuperar cliente guardado localmente
   useEffect(() => {
     const clienteLocal = localStorage.getItem('tienda_cliente')
     if (clienteLocal) {
@@ -94,7 +100,6 @@ export default function PedidoPublicoPage() {
     setSaving(true)
     try {
       const supabase = createClient()
-      // Buscar si ya existe el cliente por nombre y teléfono
       let cliente: Cliente | null = null
       if (formCliente.telefono) {
         const { data } = await supabase
@@ -105,7 +110,6 @@ export default function PedidoPublicoPage() {
           .single()
         cliente = data
       }
-
       if (!cliente) {
         const { data } = await supabase
           .from('clientes')
@@ -114,7 +118,6 @@ export default function PedidoPublicoPage() {
           .single()
         cliente = data
       }
-
       if (cliente) {
         localStorage.setItem('tienda_cliente', JSON.stringify(cliente))
         setClienteGuardado(cliente)
@@ -136,6 +139,7 @@ export default function PedidoPublicoPage() {
 
   async function handleGuardarSolicitud() {
     if (!form.articulo) { setError('Describí el artículo.'); return }
+    if (!form.lugar_entrega) { setError('Seleccioná el lugar de entrega.'); return }
     if (!clienteGuardado) return
     setSaving(true)
     setError('')
@@ -243,14 +247,13 @@ export default function PedidoPublicoPage() {
     )
   }
 
-  // Menú principal del pedido
+  // Menú principal
   if (vista === 'menu') {
     return (
       <div>
         <Link href="/tienda/pedidos" className="flex items-center gap-1 text-sm text-violet-600 mb-4 hover:underline">
           <ArrowLeft size={14} /> Volver a pedidos
         </Link>
-
         <Card className="mb-4">
           <CardContent className="pt-4 pb-3">
             <h2 className="font-bold text-lg text-gray-800">{pedido.nombre}</h2>
@@ -261,7 +264,6 @@ export default function PedidoPublicoPage() {
             <p className="text-xs text-violet-600 mt-1">Hola, {clienteGuardado?.nombre} 👋</p>
           </CardContent>
         </Card>
-
         <div className="space-y-3">
           <button
             onClick={() => { resetForm(); setVista('nueva') }}
@@ -270,7 +272,6 @@ export default function PedidoPublicoPage() {
             <p className="font-semibold text-lg">+ Nueva solicitud</p>
             <p className="text-violet-200 text-sm">Pedí un artículo específico para este viaje</p>
           </button>
-
           <button
             onClick={() => { setVista('mis-solicitudes'); cargarMisSolicitudes() }}
             className="w-full bg-white border-2 border-violet-200 text-violet-700 rounded-xl p-4 text-left hover:bg-violet-50 transition-colors"
@@ -285,12 +286,6 @@ export default function PedidoPublicoPage() {
 
   // Mis solicitudes
   if (vista === 'mis-solicitudes') {
-    const estadoLabel: Record<string, string> = {
-      pendiente: '⏳ Pendiente',
-      conseguido: '✅ Conseguido',
-      no_disponible: '❌ No disponible',
-      entregado: '📦 Entregado',
-    }
     return (
       <div>
         <button onClick={() => setVista('menu')}
@@ -298,6 +293,16 @@ export default function PedidoPublicoPage() {
           <ArrowLeft size={14} /> Volver
         </button>
         <h2 className="font-bold text-lg text-gray-800 mb-4">Mis solicitudes</h2>
+
+        {/* Visor de imagen grande */}
+        <Dialog open={!!imagenViewer} onOpenChange={() => setImagenViewer(null)}>
+          <DialogContent className="max-w-sm p-2">
+            {imagenViewer && (
+              <img src={imagenViewer} alt="Imagen ampliada"
+                className="w-full rounded-lg object-contain max-h-[80vh]" />
+            )}
+          </DialogContent>
+        </Dialog>
 
         {misSolicitudes.length === 0 ? (
           <Card>
@@ -311,49 +316,69 @@ export default function PedidoPublicoPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {misSolicitudes.map(s => (
-              <Card key={s.id}>
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{s.articulo}</p>
-                      {s.alternativa && (
-                        <p className="text-xs text-gray-500">Alt: {s.alternativa}</p>
-                      )}
-                      {s.lugar_entrega && (
-                        <p className="text-xs text-gray-500">📍 {s.lugar_entrega}</p>
-                      )}
-                      <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                        s.estado === 'conseguido' ? 'bg-green-100 text-green-700' :
-                        s.estado === 'no_disponible' ? 'bg-red-100 text-red-600' :
-                        s.estado === 'entregado' ? 'bg-gray-100 text-gray-600' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {estadoLabel[s.estado] || s.estado}
-                      </span>
+            {misSolicitudes.map(s => {
+              const est = estadoLabel[s.estado] || { text: s.estado, class: 'bg-gray-100 text-gray-600' }
+              return (
+                <Card key={s.id}>
+                  <CardContent className="py-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{s.articulo}</p>
+                        {s.alternativa && (
+                          <p className="text-xs text-gray-500">Alt: {s.alternativa}</p>
+                        )}
+                        {s.lugar_entrega && (
+                          <p className="text-xs text-gray-500">📍 {s.lugar_entrega}</p>
+                        )}
+                        <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${est.class}`}>
+                          {est.text}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {s.estado === 'pendiente' && (
+                          <>
+                            <button onClick={() => handleEditar(s)}
+                              className="p-1.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100">
+                              <Pencil size={14} />
+                            </button>
+                            <button onClick={() => handleEliminar(s.id)}
+                              className="p-1.5 rounded-lg bg-red-50 text-red-400 hover:bg-red-100">
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      {s.estado === 'pendiente' && (
-                        <>
-                          <button onClick={() => handleEditar(s)}
-                            className="p-1.5 rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-100">
-                            <Pencil size={14} />
-                          </button>
-                          <button onClick={() => handleEliminar(s.id)}
-                            className="p-1.5 rounded-lg bg-red-50 text-red-400 hover:bg-red-100">
-                            <Trash2 size={14} />
-                          </button>
-                        </>
+
+                    {/* Imágenes con click para ampliar */}
+                    <div className="flex gap-2 mt-2">
+                      {s.imagen_url && (
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-gray-400">Artículo</p>
+                          <img
+                            src={s.imagen_url}
+                            alt="Artículo"
+                            className="h-16 w-16 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setImagenViewer(s.imagen_url!)}
+                          />
+                        </div>
+                      )}
+                      {s.imagen_alternativa_url && (
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-gray-400">Alternativa</p>
+                          <img
+                            src={s.imagen_alternativa_url}
+                            alt="Alternativa"
+                            className="h-16 w-16 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setImagenViewer(s.imagen_alternativa_url!)}
+                          />
+                        </div>
                       )}
                     </div>
-                  </div>
-                  {s.imagen_url && (
-                    <img src={s.imagen_url} alt="Referencia"
-                      className="mt-2 h-16 w-16 object-cover rounded-lg border" />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
             <button
               onClick={() => { resetForm(); setVista('nueva') }}
               className="w-full border-2 border-dashed border-violet-200 text-violet-600 rounded-xl py-3 text-sm font-medium hover:bg-violet-50"
@@ -390,17 +415,18 @@ export default function PedidoPublicoPage() {
           <CardContent className="space-y-3">
             <div className="space-y-2">
               <Label>Descripción del artículo *</Label>
-              <Input name="articulo" placeholder="Ej: Crema L'Oreal Elvive 400ml"
-                value={form.articulo} onChange={e => setForm({ ...form, articulo: e.target.value })} />
+              <Input placeholder="Ej: Crema L'Oreal Elvive 400ml"
+                value={form.articulo}
+                onChange={e => setForm({ ...form, articulo: e.target.value })} />
             </div>
 
-            {/* Foto principal */}
             <div className="space-y-1">
               <p className="text-xs text-gray-500 font-medium">Foto de referencia</p>
               {imagenPrincipal.preview ? (
                 <div className="relative w-fit">
                   <img src={imagenPrincipal.preview} alt="Preview"
-                    className="h-28 w-28 object-cover rounded-lg border" />
+                    className="h-28 w-28 object-cover rounded-lg border cursor-pointer"
+                    onClick={() => setImagenViewer(imagenPrincipal.preview)} />
                   <button onClick={() => setImagenPrincipal({ file: null, preview: null })}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5">
                     <X size={12} />
@@ -412,7 +438,9 @@ export default function PedidoPublicoPage() {
                   <span className="text-sm text-gray-500">Subir foto</span>
                   <input type="file" accept="image/*" className="hidden" onChange={e => {
                     const file = e.target.files?.[0]
-                    if (file) setImagenPrincipal({ file, preview: URL.createObjectURL(file) })
+                    if (!file) return
+                    if (!file.type.startsWith('image/')) { alert('Solo imágenes'); return }
+                    setImagenPrincipal({ file, preview: URL.createObjectURL(file) })
                   }} />
                 </label>
               )}
@@ -421,16 +449,17 @@ export default function PedidoPublicoPage() {
             <div className="space-y-2">
               <Label>Alternativa aceptada</Label>
               <Input placeholder="Si no hay ese, ¿qué otro aceptás?"
-                value={form.alternativa} onChange={e => setForm({ ...form, alternativa: e.target.value })} />
+                value={form.alternativa}
+                onChange={e => setForm({ ...form, alternativa: e.target.value })} />
             </div>
 
-            {/* Foto alternativa */}
             <div className="space-y-1">
               <p className="text-xs text-gray-500 font-medium">Foto de la alternativa (opcional)</p>
               {imagenAlternativa.preview ? (
                 <div className="relative w-fit">
                   <img src={imagenAlternativa.preview} alt="Alt preview"
-                    className="h-28 w-28 object-cover rounded-lg border" />
+                    className="h-28 w-28 object-cover rounded-lg border cursor-pointer"
+                    onClick={() => setImagenViewer(imagenAlternativa.preview)} />
                   <button onClick={() => setImagenAlternativa({ file: null, preview: null })}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5">
                     <X size={12} />
@@ -442,7 +471,9 @@ export default function PedidoPublicoPage() {
                   <span className="text-sm text-gray-500">Subir foto</span>
                   <input type="file" accept="image/*" className="hidden" onChange={e => {
                     const file = e.target.files?.[0]
-                    if (file) setImagenAlternativa({ file, preview: URL.createObjectURL(file) })
+                    if (!file) return
+                    if (!file.type.startsWith('image/')) { alert('Solo imágenes'); return }
+                    setImagenAlternativa({ file, preview: URL.createObjectURL(file) })
                   }} />
                 </label>
               )}
@@ -454,14 +485,23 @@ export default function PedidoPublicoPage() {
           <CardHeader><CardTitle className="text-sm text-gray-700">Entrega</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label>Lugar de entrega</Label>
-              <Input placeholder="Dirección o punto de referencia"
-                value={form.lugar_entrega} onChange={e => setForm({ ...form, lugar_entrega: e.target.value })} />
+              <Label>Lugar de entrega *</Label>
+              <select
+                value={form.lugar_entrega}
+                onChange={e => setForm({ ...form, lugar_entrega: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Seleccioná el lugar --</option>
+                <option value="Cartago">Cartago</option>
+                <option value="San José">San José</option>
+                <option value="Guápiles">Guápiles</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Notas adicionales</Label>
               <Textarea placeholder="Cualquier detalle importante..."
-                value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} rows={2} />
+                value={form.notas}
+                onChange={e => setForm({ ...form, notas: e.target.value })} rows={2} />
             </div>
           </CardContent>
         </Card>
@@ -474,6 +514,16 @@ export default function PedidoPublicoPage() {
           {saving ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Enviar solicitud'}
         </Button>
       </div>
+
+      {/* Visor de imagen grande */}
+      <Dialog open={!!imagenViewer} onOpenChange={() => setImagenViewer(null)}>
+        <DialogContent className="max-w-sm p-2">
+          {imagenViewer && (
+            <img src={imagenViewer} alt="Imagen ampliada"
+              className="w-full rounded-lg object-contain max-h-[80vh]" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
