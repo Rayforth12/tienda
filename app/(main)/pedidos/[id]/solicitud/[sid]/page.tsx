@@ -33,6 +33,9 @@ export default function EditarSolicitudPage() {
   const [imagenPrincipalFile, setImagenPrincipalFile] = useState<File | null>(null)
   const [imagenAlternativaPreview, setImagenAlternativaPreview] = useState<string | null>(null)
   const [imagenAlternativaFile, setImagenAlternativaFile] = useState<File | null>(null)
+  const [config, setConfig] = useState({ margen_minimo: 20, tipo_cambio: 520 })
+  const [moneda_compra, setMoneda_compra] = useState('CRC')
+  
 
   const [form, setForm] = useState({
     articulo: '',
@@ -45,6 +48,12 @@ export default function EditarSolicitudPage() {
     categoria: '',
     notas: '',
   })
+
+  const precioCompraFinal = form.precio_compra
+  ? moneda_compra === 'USD'
+    ? parseFloat(form.precio_compra) * config.tipo_cambio
+    : parseFloat(form.precio_compra)
+  : undefined
 
   useEffect(() => {
     async function cargar() {
@@ -70,6 +79,20 @@ export default function EditarSolicitudPage() {
         if (data.imagen_url) setImagenPrincipalPreview(data.imagen_url)
         if (data.imagen_alternativa_url) setImagenAlternativaPreview(data.imagen_alternativa_url)
       }
+
+      const supabase2 = createClient()
+      const { data: configData } = await supabase2
+        .from('configuracion')
+        .select('*')
+        .eq('id', 1)
+        .single()
+      if (configData) {
+        setConfig({
+          margen_minimo: configData.margen_minimo || 20,
+          tipo_cambio: configData.tipo_cambio || 520,
+        })
+      }
+
       setLoading(false)
     }
     cargar()
@@ -101,13 +124,14 @@ export default function EditarSolicitudPage() {
         alternativa: form.alternativa || undefined,
         categoria: form.categoria || undefined,
         lugar_entrega: form.lugar_entrega || undefined,
-        precio_compra: form.precio_compra ? parseFloat(form.precio_compra) : undefined,
+        precio_compra: precioCompraFinal,
         precio_venta: form.precio_venta ? parseFloat(form.precio_venta) : undefined,
         estado: form.estado as Solicitud['estado'],
         cobrado: form.cobrado,
         notas: form.notas || undefined,
         imagen_url,
         imagen_alternativa_url,
+        
       } as Partial<Solicitud>)
 
       router.push(`/pedidos/${id}`)
@@ -174,6 +198,33 @@ export default function EditarSolicitudPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm text-gray-700">Artículo</CardTitle></CardHeader>
           <CardContent className="space-y-3">
+
+             <div className="space-y-2">
+              <Label>Categoría del artículo</Label>
+              <select
+                name="categoria"
+                value={form.categoria}
+                onChange={handleChange}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Sin categoría --</option>
+                <option value="maquillaje">Maquillaje</option>
+                <option value="cuidado_personal">Cuidado personal</option>
+                <option value="perfumes">Perfumes</option>
+                <option value="licores">Licores</option>
+                <option value="tenis">Tenis</option>
+                <option value="ropa">Ropa</option>
+                <option value="accesorios">Accesorios</option>
+                <option value="electronica">Electrónica</option>
+                <option value="juguetes">Juguetes</option>
+                <option value="hogar">Hogar</option>
+                <option value="medicamentos">Medicamentos</option>
+                <option value="suplementos">Suplementos</option>
+                <option value="dulces_snacks">Dulces y snacks</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
             <div className="space-y-2">
               <Label>Descripción del artículo *</Label>
               <Input name="articulo" value={form.articulo} onChange={handleChange} />
@@ -248,31 +299,6 @@ export default function EditarSolicitudPage() {
                 </label>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>Categoría del artículo</Label>
-              <select
-                name="categoria"
-                value={form.categoria}
-                onChange={handleChange}
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              >
-                <option value="">-- Sin categoría --</option>
-                <option value="maquillaje">Maquillaje</option>
-                <option value="cuidado_personal">Cuidado personal</option>
-                <option value="perfumes">Perfumes</option>
-                <option value="licores">Licores</option>
-                <option value="tenis">Tenis</option>
-                <option value="ropa">Ropa</option>
-                <option value="accesorios">Accesorios</option>
-                <option value="electronica">Electrónica</option>
-                <option value="juguetes">Juguetes</option>
-                <option value="hogar">Hogar</option>
-                <option value="medicamentos">Medicamentos</option>
-                <option value="suplementos">Suplementos</option>
-                <option value="dulces_snacks">Dulces y snacks</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
           </CardContent>
         </Card>
 
@@ -294,21 +320,87 @@ export default function EditarSolicitudPage() {
                 <option value="Guápiles">Guápiles</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
+              {/* Selector de moneda */}
               <div className="space-y-2">
-                <Label>Precio de compra (₡)</Label>
-                <Input name="precio_compra" type="number" value={form.precio_compra} onChange={handleChange} />
+                <Label>¿En qué moneda se compró?</Label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMoneda_compra('CRC')}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      moneda_compra === 'CRC'
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    ₡ Colones
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMoneda_compra('USD')}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      moneda_compra === 'USD'
+                        ? 'bg-violet-600 text-white border-violet-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    $ Dólares
+                  </button>
+                </div>
               </div>
+
+              {/* Precio de compra */}
+              <div className="space-y-2">
+                <Label>Precio de compra ({moneda_compra === 'USD' ? '$' : '₡'})</Label>
+                <Input name="precio_compra" type="number"
+                  value={form.precio_compra} onChange={handleChange} />
+              </div>
+
+              {/* Precio sugerido */}
+              {form.precio_compra && (
+                <div className="bg-violet-50 rounded-lg p-3 text-xs space-y-1.5">
+                  <p className="font-medium text-violet-700">Precio sugerido de venta:</p>
+                  {moneda_compra === 'USD' ? (
+                    <>
+                      <p className="text-gray-500">
+                        Costo en colones:{' '}
+                        <span className="font-semibold text-gray-700">
+                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio)}
+                        </span>
+                        <span className="text-gray-400"> (${form.precio_compra} × ₡{config.tipo_cambio})</span>
+                      </p>
+                      <p className="text-gray-600">
+                        Con {config.margen_minimo}% de ganancia:{' '}
+                        <span className="font-bold text-violet-700">
+                          {formatearPrecio(parseFloat(form.precio_compra) * config.tipo_cambio * (1 + config.margen_minimo / 100))}
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-gray-600">
+                      Con {config.margen_minimo}% de ganancia:{' '}
+                      <span className="font-bold text-violet-700">
+                        {formatearPrecio(parseFloat(form.precio_compra) * (1 + config.margen_minimo / 100))}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Precio de venta */}
               <div className="space-y-2">
                 <Label>Precio de venta (₡)</Label>
-                <Input name="precio_venta" type="number" value={form.precio_venta} onChange={handleChange} />
+                <Input name="precio_venta" type="number"
+                  value={form.precio_venta} onChange={handleChange} />
               </div>
+
+              {form.precio_compra && form.precio_venta && (
+                <p className="text-sm text-green-600 font-medium">
+                  Ganancia: {formatearPrecio(parseFloat(form.precio_venta) - parseFloat(form.precio_compra))}
+                </p>
+              )}
             </div>
-            {form.precio_compra && form.precio_venta && (
-              <p className="text-sm text-green-600 font-medium">
-                Ganancia: {formatearPrecio(parseFloat(form.precio_venta) - parseFloat(form.precio_compra))}
-              </p>
-            )}
             <div className="space-y-2">
               <Label>Notas especiales</Label>
               <Textarea name="notas" value={form.notas} onChange={handleChange} rows={2}
