@@ -27,6 +27,7 @@ export default function TiendaPage() {
   const [filtro, setFiltro] = useState('todos')
   const [form, setForm] = useState({ nombre: '', apellidos: '', lugar_entrega: '' })
   const [error, setError] = useState('')
+  const [imagenViewer, setImagenViewer] = useState<string | null>(null)
 
   useEffect(() => {
     async function cargar() {
@@ -172,8 +173,12 @@ ${lineas}
             return (
               <Card key={a.id} className="overflow-hidden">
                 {a.imagen_url ? (
-                  <img src={a.imagen_url} alt={a.nombre}
-                    className="w-full h-36 object-cover" />
+                  <img
+                    src={a.imagen_url}
+                    alt={a.nombre}
+                    className="w-full h-36 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setImagenViewer(a.imagen_url!)}
+                  />
                 ) : (
                   <div className="w-full h-36 bg-gray-100 flex items-center justify-center">
                     <Package size={32} className="text-gray-300" />
@@ -297,6 +302,17 @@ ${lineas}
                 ← Volver al carrito
               </button>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!imagenViewer} onOpenChange={() => setImagenViewer(null)}>
+        <DialogContent className="max-w-xs p-2">
+          {imagenViewer && (
+            <img
+              src={imagenViewer}
+              alt="Imagen ampliada"
+              className="w-full rounded-lg object-contain max-h-[70vh]"
+            />
           )}
         </DialogContent>
       </Dialog>

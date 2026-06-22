@@ -19,6 +19,7 @@ interface SolicitudPublica {
   id: string
   articulo: string
   alternativa?: string
+  categoria?: string
   imagen_url?: string
   imagen_alternativa_url?: string
   lugar_entrega?: string
@@ -56,6 +57,7 @@ export default function PedidoPublicoPage() {
   const [form, setForm] = useState({
     articulo: '',
     alternativa: '',
+    categoria: '',
     lugar_entrega: '',
     notas: '',
   })
@@ -130,7 +132,7 @@ export default function PedidoPublicoPage() {
   }
 
   function resetForm() {
-    setForm({ articulo: '', alternativa: '', lugar_entrega: '', notas: '' })
+    setForm({ articulo: '', alternativa: '', categoria: '', lugar_entrega: '', notas: '' })
     setImagenPrincipal({ file: null, preview: null })
     setImagenAlternativa({ file: null, preview: null })
     setEditandoId(null)
@@ -155,6 +157,7 @@ export default function PedidoPublicoPage() {
         await supabase.from('solicitudes').update({
           articulo: form.articulo,
           alternativa: form.alternativa || null,
+          categoria: form.categoria || null,
           lugar_entrega: form.lugar_entrega || null,
           notas: form.notas || null,
           ...(imagen_url && { imagen_url }),
@@ -166,6 +169,7 @@ export default function PedidoPublicoPage() {
           cliente_id: clienteGuardado.id,
           articulo: form.articulo,
           alternativa: form.alternativa || null,
+          categoria: form.categoria || null,
           imagen_url: imagen_url || null,
           imagen_alternativa_url: imagen_alternativa_url || null,
           lugar_entrega: form.lugar_entrega || null,
@@ -197,6 +201,7 @@ export default function PedidoPublicoPage() {
     setForm({
       articulo: s.articulo,
       alternativa: s.alternativa || '',
+      categoria: s.categoria || '',
       lugar_entrega: s.lugar_entrega || '',
       notas: s.notas || '',
     })
@@ -413,6 +418,31 @@ export default function PedidoPublicoPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm text-gray-700">¿Qué querés pedir?</CardTitle></CardHeader>
           <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label>Categoría del artículo</Label>
+              <select
+                value={form.categoria || ''}
+                onChange={e => setForm({ ...form, categoria: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="">-- Sin categoría --</option>
+                <option value="maquillaje">Maquillaje</option>
+                <option value="cuidado_personal">Cuidado personal</option>
+                <option value="perfumes">Perfumes</option>
+                <option value="licores">Licores</option>
+                <option value="tenis">Tenis</option>
+                <option value="ropa">Ropa</option>
+                <option value="accesorios">Accesorios</option>
+                <option value="electronica">Electrónica</option>
+                <option value="juguetes">Juguetes</option>
+                <option value="hogar">Hogar</option>
+                <option value="medicamentos">Medicamentos</option>
+                <option value="suplementos">Suplementos</option>
+                <option value="dulces_snacks">Dulces y snacks</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
             <div className="space-y-2">
               <Label>Descripción del artículo *</Label>
               <Input placeholder="Ej: Crema L'Oreal Elvive 400ml"
