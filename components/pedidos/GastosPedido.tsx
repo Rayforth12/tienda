@@ -16,12 +16,15 @@ const tiposGasto = [
   { value: 'otro', label: '📦 Otro' },
 ]
 
+
 export default function GastosPedido({
   pedidoId,
   onCambio,
+    bloqueado = false,
 }: {
   pedidoId: string
   onCambio?: () => void
+  bloqueado?: boolean
 }) {
   const [gastos, setGastos] = useState<GastoPedido[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,45 +96,55 @@ export default function GastosPedido({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-red-500">{formatearPrecio(g.monto)}</span>
-              <button onClick={() => handleEliminar(g.id)}
-                className="p-1 rounded bg-red-50 hover:bg-red-100">
-                <Trash2 size={12} className="text-red-400" />
-              </button>
+              {!bloqueado && (
+                <button onClick={() => handleEliminar(g.id)}
+                  className="p-1 rounded bg-red-50 hover:bg-red-100">
+                  <Trash2 size={12} className="text-red-400" />
+                </button>
+              )}
             </div>
           </div>
         ))}
 
-        {agregando ? (
-          <div className="space-y-2 pt-2">
-            <select value={form.tipo}
-              onChange={e => setForm({ ...form, tipo: e.target.value })}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-              {tiposGasto.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            <Input placeholder="Descripción (ej: Gasolina ida)"
-              value={form.descripcion}
-              onChange={e => setForm({ ...form, descripcion: e.target.value })} />
-            <Input type="number" placeholder="Monto en ₡"
-              value={form.monto}
-              onChange={e => setForm({ ...form, monto: e.target.value })} />
-            <div className="flex gap-2">
-              <Button className="flex-1 bg-violet-600 hover:bg-violet-700 h-8 text-xs"
-                onClick={handleAgregar} disabled={saving}>
-                {saving ? 'Guardando...' : 'Agregar'}
-              </Button>
-              <Button variant="outline" className="h-8 text-xs"
-                onClick={() => setAgregando(false)}>
-                Cancelar
-              </Button>
+        {!bloqueado && (
+          agregando ? (
+            <div className="space-y-2 pt-2">
+              <select value={form.tipo}
+                onChange={e => setForm({ ...form, tipo: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                {tiposGasto.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <Input placeholder="Descripción (ej: Gasolina ida)"
+                value={form.descripcion}
+                onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+              <Input type="number" placeholder="Monto en ₡"
+                value={form.monto}
+                onChange={e => setForm({ ...form, monto: e.target.value })} />
+              <div className="flex gap-2">
+                <Button className="flex-1 bg-violet-600 hover:bg-violet-700 h-8 text-xs"
+                  onClick={handleAgregar} disabled={saving}>
+                  {saving ? 'Guardando...' : 'Agregar'}
+                </Button>
+                <Button variant="outline" className="h-8 text-xs"
+                  onClick={() => setAgregando(false)}>
+                  Cancelar
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button onClick={() => setAgregando(true)}
-            className="flex items-center gap-1 text-xs text-violet-600 hover:underline pt-1">
-            <Plus size={12} /> Agregar gasto
-          </button>
+          ) : (
+            <button onClick={() => setAgregando(true)}
+              className="flex items-center gap-1 text-xs text-violet-600 hover:underline pt-1">
+              <Plus size={12} /> Agregar gasto
+            </button>
+          )
+        )}
+
+        {bloqueado && (
+          <p className="text-xs text-gray-400 italic">
+            El pedido fue entregado — no se pueden agregar más gastos.
+          </p>
         )}
       </CardContent>
     </Card>

@@ -12,6 +12,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Plus, User, MapPin, Package, CheckCircle, XCircle, Clock, Truck, Search } from 'lucide-react'
 import GastosPedido from '@/components/pedidos/GastosPedido'
 import { getGastosByPedido } from '@/lib/queries/gastos'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
+
+
+
+const router = useRouter()
 
 
 const estadoSolicitud: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
@@ -35,6 +41,13 @@ export default function PedidoDetallePage() {
     setPedido(data)
     setLoading(false)
     setTotalGastos(gastos.reduce((acc, g) => acc + g.monto, 0))
+  }
+
+  async function handleEliminarPedido() {
+    if (!confirm('¿Eliminar este pedido permanentemente? Esta acción no se puede deshacer.')) return
+    const supabase = createClient()
+    await supabase.from('pedidos').delete().eq('id', id)
+    router.push('/pedidos')
   }
 
  useEffect(() => {
@@ -141,6 +154,15 @@ export default function PedidoDetallePage() {
         {pedido.estado === 'cerrado' && (
           <Button variant="outline" onClick={handleEntregar}>Marcar como entregado</Button>
         )}
+        {pedido.estado === 'entregado' && (
+          <Button
+            variant="outline"
+            className="text-red-500 border-red-200 hover:bg-red-50"
+            onClick={handleEliminarPedido}
+          >
+            Eliminar pedido
+          </Button>
+        )}
         {!puedeAgregar && pedido.estado === 'abierto' && (
           <p className="text-sm text-red-500 self-center">
             ⚠️ La fecha límite venció — no se pueden agregar más solicitudes.
@@ -152,6 +174,7 @@ export default function PedidoDetallePage() {
       <GastosPedido 
         pedidoId={id as string} 
         onCambio={cargar}
+        bloqueado={pedido.estado === 'entregado'}
       />
       
       {/* Búsqueda y filtros */}
