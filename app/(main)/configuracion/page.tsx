@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Settings, Check } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [guardado, setGuardado] = useState(false)
   const [error, setError] = useState('')
+  const [modalTipoCambio, setModalTipoCambio] = useState(false)
   const [form, setForm] = useState({
     nombre_negocio: '',
     margen_minimo: '20',
@@ -98,6 +100,12 @@ export default function ConfiguracionPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Tipo de cambio (₡ por $1)</Label>
+              <button
+                onClick={() => setModalTipoCambio(true)}
+                className="text-xs text-violet-600 hover:underline flex items-center gap-1"
+              >
+                📊 Ver tipo de cambio hoy
+              </button>
               <Input name="tipo_cambio" type="number" min="1"
                 value={form.tipo_cambio} onChange={handleChange} />
               <p className="text-xs text-gray-400">
@@ -122,6 +130,27 @@ export default function ConfiguracionPage() {
           {guardado ? <><Check size={16} /> Guardado</> : saving ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </div>
+
+       {/* Modal tipo de cambio */}
+      <Dialog open={modalTipoCambio} onOpenChange={setModalTipoCambio}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tipo de cambio — BCCR</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-gray-500 mb-3">
+            Fuente: Banco Central de Costa Rica · Actualizado al día de hoy
+          </p>
+          <iframe
+            src="https://gee.bccr.fi.cr/indicadoreseconomicos/Cuadros/frmConsultaTCVentanilla.aspx"
+            className="w-full h-[500px] border rounded-lg"
+            title="Tipo de cambio BCCR"
+          />
+          <p className="text-xs text-gray-400 mt-2">
+            💡 Usá el valor de <b>Venta</b> del banco de tu preferencia para actualizar el tipo de cambio.
+          </p>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }
