@@ -15,11 +15,6 @@ import { getGastosByPedido } from '@/lib/queries/gastos'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-
-
-const router = useRouter()
-
-
 const estadoSolicitud: Record<string, { label: string; icon: React.ReactNode; class: string }> = {
   pendiente:     { label: 'Pendiente',     icon: <Clock size={13} />,       class: 'bg-yellow-100 text-yellow-700' },
   conseguido:    { label: 'Conseguido',    icon: <CheckCircle size={13} />, class: 'bg-green-100 text-green-700' },
@@ -29,6 +24,7 @@ const estadoSolicitud: Record<string, { label: string; icon: React.ReactNode; cl
 
 export default function PedidoDetallePage() {
   const { id } = useParams()
+  const router = useRouter()
   const [pedido, setPedido] = useState<Pedido | null>(null)
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
