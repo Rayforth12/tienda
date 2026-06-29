@@ -9,6 +9,67 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Settings, Check } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
+
+function TipoCambioTabla() {
+  const [datos, setDatos] = useState<{ tipo: string; entidad: string; compra: string; venta: string }[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/tipo-cambio')
+      .then(r => r.json())
+      .then(d => {
+        if (d.filas) setDatos(d.filas)
+        else setError(true)
+        setCargando(false)
+      })
+      .catch(() => { setError(true); setCargando(false) })
+  }, [])
+
+  if (cargando) return <p className="text-sm text-gray-400 text-center py-6">Cargando tipo de cambio...</p>
+  if (error || datos.length === 0) return (
+    <div className="text-center py-6 space-y-3">
+      <p className="text-sm text-gray-500">No se pudo cargar la tabla automáticamente.</p>
+      <a
+        href="https://gee.bccr.fi.cr/indicadoreseconomicos/Cuadros/frmConsultaTCVentanilla.aspx"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block bg-violet-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-violet-700"
+      >
+        Ver en sitio del BCCR →
+      </a>
+    </div>
+  )
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-gray-500">
+        💡 Usá el valor de <b>Venta</b> del banco de tu preferencia.
+      </p>
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="bg-violet-600 text-white">
+            <th className="px-3 py-2 text-left">Tipo</th>
+            <th className="px-3 py-2 text-left">Entidad</th>
+            <th className="px-3 py-2 text-right">Compra</th>
+            <th className="px-3 py-2 text-right font-bold">Venta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {datos.map((fila, i) => (
+            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <td className="px-3 py-1.5 text-gray-500">{fila.tipo}</td>
+              <td className="px-3 py-1.5 text-gray-700">{fila.entidad}</td>
+              <td className="px-3 py-1.5 text-right text-gray-600">{fila.compra}</td>
+              <td className="px-3 py-1.5 text-right font-semibold text-violet-700">{fila.venta}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -133,21 +194,11 @@ export default function ConfiguracionPage() {
 
        {/* Modal tipo de cambio */}
       <Dialog open={modalTipoCambio} onOpenChange={setModalTipoCambio}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Tipo de cambio — BCCR</DialogTitle>
+            <DialogTitle>Tipo de cambio hoy — BCCR</DialogTitle>
           </DialogHeader>
-          <p className="text-xs text-gray-500 mb-3">
-            Fuente: Banco Central de Costa Rica · Actualizado al día de hoy
-          </p>
-          <iframe
-            src="https://gee.bccr.fi.cr/indicadoreseconomicos/Cuadros/frmConsultaTCVentanilla.aspx"
-            className="w-full h-[500px] border rounded-lg"
-            title="Tipo de cambio BCCR"
-          />
-          <p className="text-xs text-gray-400 mt-2">
-            💡 Usá el valor de <b>Venta</b> del banco de tu preferencia para actualizar el tipo de cambio.
-          </p>
+          <TipoCambioTabla />
         </DialogContent>
       </Dialog>
 
