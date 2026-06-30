@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server'
 
+function limpiarTexto(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export async function GET() {
   try {
     const res = await fetch(
@@ -8,8 +17,7 @@ export async function GET() {
     )
     const html = await res.text()
 
-    // Extraer filas de la tabla
-    const filas: { entidad: string; tipo: string; compra: string; venta: string }[] = []
+    const filas: { tipo: string; entidad: string; compra: string; venta: string }[] = []
     const filaRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi
     const celdaRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi
 
@@ -21,20 +29,39 @@ export async function GET() {
       const celdas: string[] = []
       let celdaMatch
       while ((celdaMatch = celdaRegex.exec(filaHtml)) !== null) {
-        const texto = celdaMatch[1].replace(/<[^>]+>/g, '').trim()
-        if (texto) celdas.push(texto)
+        celdas.push(limpiarTexto(celdaMatch[1]))
       }
 
-      if (celdas.length >= 3) {
-        if (celdas.length === 4) tipoActual = celdas[0]
-        const entidad = celdas.length === 4 ? celdas[1] : celdas[0]
-        const compra = celdas.length === 4 ? celdas[2] : celdas[1]
-        const venta = celdas.length === 4 ? celdas[3] : celdas[2]
+      // Filtrar filas vacías o de encabezado
+      const celdasLimpias = celdas.filter(c => c.length > 0)
+      if (celdasLimpias.length < 3) continue
 
-        if (compra.includes(',') || compra.match(/\d/)) {
-          filas.push({ tipo: tipoActual, entidad, compra, venta })
-        }
+      let tipo = ''
+      let entidad = ''
+      let compra = ''
+      let venta = ''
+
+      if (celdasLimpias.length >= 5) {
+        // Fila con tipo de entidad incluido
+        tipo = celdasLimpias[0]
+        entidad = celdasLimpias[1]
+        compra = celdasLimpias[2]
+        venta = celdasLimpias[3]
+        tipoActual = tipo
+      } else if (celdasLimpias.length === 4) {
+        entidad = celdasLimpias[0]
+        compra = celdasLimpias[1]
+        venta = celdasLimpias[2]
+        tipo = tipoActual
+      } else {
+        continue
       }
+
+      // Validar que compra y venta sean números
+      const esNumero = (s: string) => /^\d{2,3}([.,]\d+)?$/.test(s.trim())
+      if (!entidad || !esNumero(compra) || !esNumero(venta)) continue
+
+      filas.push({ tipo: tipo || tipoActual, entidad, compra, venta })
     }
 
     return NextResponse.json({ filas })
