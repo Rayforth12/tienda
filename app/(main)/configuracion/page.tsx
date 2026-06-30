@@ -46,22 +46,20 @@ function TipoCambioTabla() {
       <p className="text-xs text-gray-500">
         💡 Usá el valor de <b>Venta</b> del banco de tu preferencia.
       </p>
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-violet-600 text-white">
-            <th className="px-2 py-2 text-left whitespace-nowrap">Tipo</th>
-            <th className="px-2 py-2 text-left">Entidad</th>
-            <th className="px-2 py-2 text-right whitespace-nowrap">Compra</th>
-            <th className="px-2 py-2 text-right font-bold whitespace-nowrap">Venta</th>
+            <th className="px-3 py-2 text-left">Entidad</th>
+            <th className="px-3 py-2 text-right">Compra</th>
+            <th className="px-3 py-2 text-right font-bold">Venta</th>
           </tr>
         </thead>
         <tbody>
           {datos.map((fila, i) => (
             <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap">{fila.tipo}</td>
-              <td className="px-2 py-1.5 text-gray-700">{fila.entidad}</td>
-              <td className="px-2 py-1.5 text-right text-gray-600 whitespace-nowrap">{fila.compra}</td>
-              <td className="px-2 py-1.5 text-right font-semibold text-violet-700 whitespace-nowrap">{fila.venta}</td>
+              <td className="px-3 py-2 text-gray-700">{fila.entidad}</td>
+              <td className="px-3 py-2 text-right text-gray-600 whitespace-nowrap">{fila.compra}</td>
+              <td className="px-3 py-2 text-right font-semibold text-violet-700 whitespace-nowrap">{fila.venta}</td>
             </tr>
           ))}
         </tbody>
@@ -194,7 +192,7 @@ export default function ConfiguracionPage() {
 
        {/* Modal tipo de cambio */}
       <Dialog open={modalTipoCambio} onOpenChange={setModalTipoCambio}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tipo de cambio hoy — BCCR</DialogTitle>
           </DialogHeader>

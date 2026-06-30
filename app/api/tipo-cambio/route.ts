@@ -64,7 +64,9 @@ export async function GET() {
       filas.push({ tipo: tipo || tipoActual, entidad, compra, venta })
     }
 
-    return NextResponse.json({ filas })
+    return NextResponse.json({ 
+      filas: filas.map(f => ({ entidad: f.entidad, compra: f.compra, venta: f.venta }))
+    })
   } catch {
     return NextResponse.json({ error: 'No se pudo obtener el tipo de cambio' }, { status: 500 })
   }
